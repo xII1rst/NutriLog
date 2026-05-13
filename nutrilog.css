@@ -901,24 +901,20 @@ textarea {
 .install-banner {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(110%);
+  width: 100%;
+  max-width: 680px;
   z-index: 300;
   background: var(--surface);
   border-top: 1px solid var(--border2);
-  padding: 14px 18px 28px;
+  padding: 14px 18px calc(28px + env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
-  max-width: 680px;
-  margin: 0 auto;
-  transform: translateY(100%);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-  /* Fijar centrado en escritorio */
-  left: 50%;
-  transform: translateX(-50%) translateY(100%);
-  width: 100%;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.4);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .install-banner.show {
