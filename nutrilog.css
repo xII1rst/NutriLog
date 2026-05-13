@@ -865,6 +865,31 @@ textarea {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Toast con botón Deshacer */
+.toast.undo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 18px;
+}
+
+.toast-undo-btn {
+  background: var(--accent);
+  color: #1a1400;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-family: var(--f);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.toast-undo-btn:hover { opacity: 0.85; }
+
 /* ── RESPONSIVE ─────────────────────────────────────────── */
 @media (min-width: 600px) {
   main       { padding: 0 24px 120px; }

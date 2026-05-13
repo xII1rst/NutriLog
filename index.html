@@ -6,8 +6,13 @@
   <meta name="theme-color" content="#111210">
   <meta name="description" content="NutriLog — Registro de comidas y actividad física">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NutriLog">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>NutriLog</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.webmanifest">
 
   <!-- Fuente -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -148,6 +153,28 @@
         <button class="btn-exp" onclick="doPreview('md', 'prev-md')">Vista previa</button>
       </div>
       <pre class="preview" id="prev-md"></pre>
+    </div>
+
+    <!-- Importar JSON -->
+    <div class="exp-block">
+      <div class="exp-block-title">
+        Importar JSON <span class="exp-badge" style="background:rgba(127,160,200,0.12);color:#7fa0c8;border-color:rgba(127,160,200,0.3)">Seguridad del dato</span>
+      </div>
+      <div class="exp-desc">
+        Restaura o migra datos desde un JSON exportado. Los días existentes se combinan
+        sin duplicar; los días nuevos se añaden directamente.
+      </div>
+      <div class="exp-btns">
+        <button class="btn-exp" onclick="openImport()">&#8593; Importar archivo</button>
+      </div>
+      <!-- Input oculto para file picker -->
+      <input
+        type="file"
+        id="import-file"
+        accept=".json,application/json"
+        style="display:none"
+        onchange="handleImport(event)"
+      >
     </div>
 
     <!-- Zona de peligro -->

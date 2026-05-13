@@ -104,6 +104,15 @@ function renderHoy() {
   document.getElementById('hdr-date').textContent  = curDate;
 
   const day = getDay(curDate);
+
+  // ── PUNTO 1: Ordenar por hora antes de renderizar ──────────
+  const sortedMeals = [...day.meals].sort((a, b) =>
+    (a.time || '99:99').localeCompare(b.time || '99:99')
+  );
+  const sortedActs = [...day.activities].sort((a, b) =>
+    (a.time || '99:99').localeCompare(b.time || '99:99')
+  );
+
   const totalIngredientes = day.meals.reduce((acc, m) => acc + m.ingredients.length, 0);
 
   document.getElementById('s-meals').textContent = day.meals.length;
@@ -111,26 +120,33 @@ function renderHoy() {
   document.getElementById('s-acts').textContent  = day.activities.length;
 
   const mealsList = document.getElementById('meals-list');
-  mealsList.innerHTML = day.meals.length
-    ? day.meals.map((m, i) => mealCard(m, i, curDate)).join('')
+  mealsList.innerHTML = sortedMeals.length
+    ? sortedMeals.map((m, i) => mealCard(m, i, curDate, day.meals)).join('')
     : `<div class="empty"><div class="empty-icon">🍽</div>Sin comidas registradas.<br>Toca + para añadir.</div>`;
 
   const actsList = document.getElementById('acts-list');
-  actsList.innerHTML = day.activities.length
-    ? day.activities.map((a, i) => actCard(a, i, curDate)).join('')
+  actsList.innerHTML = sortedActs.length
+    ? sortedActs.map((a, i) => actCard(a, i, curDate, day.activities)).join('')
     : `<div class="empty"><div class="empty-icon">⚡</div>Sin actividad registrada.<br>Toca + para añadir.</div>`;
 }
 
 // ── TEMPLATES DE CARDS ───────────────────────────────────────
 const MEAL_ICONS = { desayuno: '🌅', almuerzo: '☀️', cena: '🌙', merienda: '🍎' };
 
-function mealCard(meal, idx, dateKey) {
+// Nota: sortedList es la lista ordenada para display; originalList es la del storage (para el idx real)
+function mealCard(meal, sortedIdx, dateKey, originalList) {
   const icon  = MEAL_ICONS[meal.type] || '🍴';
   const chips = meal.ingredients.map(g => `<span class="chip">${esc(g)}</span>`).join('');
   const note  = meal.notes ? `<div class="card-note">${esc(meal.notes)}</div>` : '';
+
+  // Índice real en el array original (por id, seguro contra reordenamientos)
+  const realIdx = originalList
+    ? originalList.findIndex(m => m.id === meal.id)
+    : sortedIdx;
+
   const onDel = dateKey === curDate
-    ? `delMeal(${idx})`
-    : `delMealH('${dateKey}', ${idx}); renderHistory()`;
+    ? `delMeal(${realIdx})`
+    : `delMealH('${dateKey}', ${realIdx}); renderHistory()`;
 
   return `
     <div class="card">
@@ -149,10 +165,14 @@ function mealCard(meal, idx, dateKey) {
     </div>`;
 }
 
-function actCard(act, idx, dateKey) {
+function actCard(act, sortedIdx, dateKey, originalList) {
+  const realIdx = originalList
+    ? originalList.findIndex(a => a.id === act.id)
+    : sortedIdx;
+
   const onDel = dateKey === curDate
-    ? `delAct(${idx})`
-    : `delActH('${dateKey}', ${idx}); renderHistory()`;
+    ? `delAct(${realIdx})`
+    : `delActH('${dateKey}', ${realIdx}); renderHistory()`;
 
   return `
     <div class="card activity">
@@ -242,19 +262,60 @@ function saveMeal() {
   toast('Comida guardada');
 }
 
+// ── PUNTO 3: Soft delete con undo ────────────────────────────
+let undoStack = null; // { key, type, idx, item, render }
+
 function delMeal(idx) {
-  const day = getDay(curDate);
-  day.meals.splice(idx, 1);
+  const day  = getDay(curDate);
+  const item = day.meals.splice(idx, 1)[0];
   saveDay(curDate, day);
+  undoStack = { key: curDate, type: 'meal', idx, item, render: 'hoy' };
   renderHoy();
-  toast('Eliminado');
+  toastUndo('Comida eliminada');
 }
 
 function delMealH(key, idx) {
-  const day = getDay(key);
-  day.meals.splice(idx, 1);
+  const day  = getDay(key);
+  const item = day.meals.splice(idx, 1)[0];
   saveDay(key, day);
-  toast('Eliminado');
+  undoStack = { key, type: 'meal', idx, item, render: 'history' };
+  toastUndo('Comida eliminada');
+}
+
+function delAct(idx) {
+  const day  = getDay(curDate);
+  const item = day.activities.splice(idx, 1)[0];
+  saveDay(curDate, day);
+  undoStack = { key: curDate, type: 'act', idx, item, render: 'hoy' };
+  renderHoy();
+  toastUndo('Actividad eliminada');
+}
+
+function delActH(key, idx) {
+  const day  = getDay(key);
+  const item = day.activities.splice(idx, 1)[0];
+  saveDay(key, day);
+  undoStack = { key, type: 'act', idx, item, render: 'history' };
+  toastUndo('Actividad eliminada');
+}
+
+function undoDelete() {
+  if (!undoStack) return;
+  const { key, type, idx, item, render } = undoStack;
+  const day = getDay(key);
+
+  if (type === 'meal') {
+    day.meals.splice(idx, 0, item);
+  } else {
+    day.activities.splice(idx, 0, item);
+  }
+
+  saveDay(key, day);
+  undoStack = null;
+
+  if (render === 'hoy') renderHoy();
+  else renderHistory();
+  toast('Restaurado ✓');
 }
 
 // ── MODAL ACTIVIDAD ──────────────────────────────────────────
@@ -281,21 +342,6 @@ function saveAct() {
   closeActModal();
   renderHoy();
   toast('Actividad guardada');
-}
-
-function delAct(idx) {
-  const day = getDay(curDate);
-  day.activities.splice(idx, 1);
-  saveDay(curDate, day);
-  renderHoy();
-  toast('Eliminado');
-}
-
-function delActH(key, idx) {
-  const day = getDay(key);
-  day.activities.splice(idx, 1);
-  saveDay(key, day);
-  toast('Eliminado');
 }
 
 // ── DATE PICKER ──────────────────────────────────────────────
@@ -328,9 +374,18 @@ function renderHistory() {
   cont.innerHTML = dates.map(key => {
     const day   = data[key];
     const total = day.meals.length + day.activities.length;
+
+    // Ordenar también en historial
+    const sortedMeals = [...day.meals].sort((a, b) =>
+      (a.time || '99:99').localeCompare(b.time || '99:99')
+    );
+    const sortedActs = [...day.activities].sort((a, b) =>
+      (a.time || '99:99').localeCompare(b.time || '99:99')
+    );
+
     const cards = [
-      ...day.meals.map((m, i)      => mealCard(m, i, key)),
-      ...day.activities.map((a, i) => actCard(a, i, key))
+      ...sortedMeals.map((m, i) => mealCard(m, i, key, day.meals)),
+      ...sortedActs.map((a, i)  => actCard(a, i, key, day.activities))
     ].join('');
 
     return `
@@ -452,18 +507,94 @@ function doCopy(fmt) {
 function doPreview(fmt, previewId) {
   const el = document.getElementById(previewId);
 
-  // Toggle: si ya está abierto, lo cierra
   if (el.classList.contains('show')) {
     el.classList.remove('show');
     return;
   }
 
-  // Cierra cualquier otro preview abierto
   document.querySelectorAll('.preview').forEach(p => p.classList.remove('show'));
 
   const txt = fmt === 'json' ? buildJSON() : buildMD();
   el.textContent = txt.slice(0, 2000) + (txt.length > 2000 ? '\n\n[... truncado]' : '');
   el.classList.add('show');
+}
+
+// ── PUNTO 2: Import JSON ──────────────────────────────────────
+function openImport() {
+  document.getElementById('import-file').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+
+      // Validar estructura básica
+      if (!parsed.dias || !Array.isArray(parsed.dias)) {
+        toast('Archivo inválido — formato no reconocido');
+        return;
+      }
+
+      const existing = load();
+      let imported = 0;
+      let merged   = 0;
+
+      parsed.dias.forEach(dia => {
+        if (!dia.fecha) return;
+
+        const key   = dia.fecha;
+        const meals = (dia.comidas || []).map(c => ({
+          id:          Date.now() + Math.random(),
+          type:        c.tipo        || 'merienda',
+          name:        c.nombre      || c.tipo || 'merienda',
+          time:        c.hora        || '',
+          ingredients: c.ingredientes || [],
+          notes:       c.notas       || ''
+        }));
+        const activities = (dia.actividad_fisica || []).map(a => ({
+          id:          Date.now() + Math.random(),
+          description: a.descripcion || '',
+          time:        a.hora        || ''
+        }));
+
+        if (existing[key]) {
+          // Merge: añadir solo los que no existan (por nombre+hora como heurística)
+          meals.forEach(m => {
+            const dup = existing[key].meals.some(
+              em => em.name === m.name && em.time === m.time
+            );
+            if (!dup) existing[key].meals.push(m);
+          });
+          activities.forEach(a => {
+            const dup = existing[key].activities.some(
+              ea => ea.description === a.description && ea.time === a.time
+            );
+            if (!dup) existing[key].activities.push(a);
+          });
+          merged++;
+        } else {
+          existing[key] = { meals, activities };
+          imported++;
+        }
+      });
+
+      persist(existing);
+      renderHoy();
+      toast(`Importado: ${imported} días nuevos, ${merged} combinados`);
+
+    } catch {
+      toast('Error al leer el archivo');
+    }
+
+    // Reset input para permitir reimportar el mismo archivo
+    e.target.value = '';
+  };
+
+  reader.readAsText(file);
 }
 
 function nukAll() {
@@ -500,13 +631,27 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
+// ── PUNTO 3: Toast con botón Deshacer ────────────────────────
 let toastTimer;
+
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
+  el.innerHTML = esc(msg);
   el.classList.add('on');
+  el.classList.remove('undo');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('on'), 2400);
+}
+
+function toastUndo(msg) {
+  const el = document.getElementById('toast');
+  el.innerHTML = `${esc(msg)} <button class="toast-undo-btn" onclick="undoDelete()">Deshacer</button>`;
+  el.classList.add('on', 'undo');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.classList.remove('on', 'undo');
+    undoStack = null; // expiró la ventana de undo
+  }, 4000);
 }
 
 // Cerrar modales al hacer clic en el backdrop
@@ -519,14 +664,13 @@ document.querySelectorAll('.backdrop').forEach(bd => {
   });
 });
 
-// ── FAVICON DINÁMICO (isotipo C) ─────────────────────────────
+// ── FAVICON DINÁMICO (isotipo) ───────────────────────────────
 (function generateFavicon() {
   const canvas  = document.createElement('canvas');
   canvas.width  = 32;
   canvas.height = 32;
   const ctx     = canvas.getContext('2d');
 
-  // Función helper para rect redondeado
   function roundedRect(x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -541,7 +685,6 @@ document.querySelectorAll('.backdrop').forEach(bd => {
     ctx.closePath();
   }
 
-  // Fondo del isotipo
   ctx.fillStyle = '#212320';
   roundedRect(0, 0, 32, 32, 7);
   ctx.fill();
@@ -553,19 +696,16 @@ document.querySelectorAll('.backdrop').forEach(bd => {
 
   ctx.lineCap = 'round';
 
-  // Línea superior — blanca, tenue
   ctx.globalAlpha  = 0.28;
   ctx.strokeStyle  = '#e8e6df';
   ctx.lineWidth    = 2.2;
   ctx.beginPath(); ctx.moveTo(6, 10); ctx.lineTo(26, 10); ctx.stroke();
 
-  // Línea media — dorada, acento principal
   ctx.globalAlpha  = 1;
   ctx.strokeStyle  = '#c8a96e';
   ctx.lineWidth    = 2.6;
   ctx.beginPath(); ctx.moveTo(6, 16); ctx.lineTo(26, 16); ctx.stroke();
 
-  // Línea inferior — blanca, semitransparente, más corta
   ctx.globalAlpha  = 0.55;
   ctx.strokeStyle  = '#e8e6df';
   ctx.lineWidth    = 2.2;
@@ -579,19 +719,9 @@ document.querySelectorAll('.backdrop').forEach(bd => {
   document.head.appendChild(link);
 })();
 
-// ── PWA SERVICE WORKER ───────────────────────────────────────
+// ── PWA SERVICE WORKER (archivo real) ───────────────────────
 if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE = 'nutrilog-v3';
-    self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
-    });
-    self.addEventListener('fetch', e => {
-      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-    });
-  `;
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
 // ── INIT ─────────────────────────────────────────────────────
