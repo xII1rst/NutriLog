@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111210">
+  <meta name="description" content="NutriLog — Registro de comidas y actividad física">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>NutriLog</title>
+
+  <!-- Fuente -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="nutrilog.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo-wrap">
+
+    <!-- Isotipo C: 3 líneas horizontales tipo log -->
+    <svg class="logo-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="28" height="28" rx="7" fill="#212320"/>
+      <rect width="28" height="28" rx="7" fill="none" stroke="#3a3d34" stroke-width="0.8"/>
+      <!-- Línea superior: blanca, tenue -->
+      <line x1="6" y1="9"  x2="22" y2="9"  stroke="#e8e6df" stroke-width="2"   stroke-linecap="round" opacity="0.28"/>
+      <!-- Línea media: dorada, acento -->
+      <line x1="6" y1="14" x2="22" y2="14" stroke="#c8a96e" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Línea inferior: blanca, más corta -->
+      <line x1="6" y1="19" x2="17" y2="19" stroke="#e8e6df" stroke-width="2"   stroke-linecap="round" opacity="0.55"/>
+    </svg>
+
+    <div class="logo-wordmark">Nutri<em>Log</em></div>
+  </div>
+
+  <!-- Chip de fecha — abre el date picker al hacer clic -->
+  <div class="date-chip" id="hdr-date" onclick="openDatePicker()">—</div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NAVEGACIÓN
+════════════════════════════════════════════════════════════ -->
+<nav>
+  <button class="tab active" onclick="switchTab('hoy', this)">Hoy</button>
+  <button class="tab"        onclick="switchTab('historial', this)">Historial</button>
+  <button class="tab"        onclick="switchTab('exportar', this)">Exportar</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CONTENIDO PRINCIPAL
+════════════════════════════════════════════════════════════ -->
+<main>
+
+  <!-- ── PANEL: HOY ──────────────────────────────────────── -->
+  <div class="panel active" id="panel-hoy">
+
+    <!-- Barra de navegación de días -->
+    <div class="day-bar">
+      <div class="day-bar-title" id="hoy-title">—</div>
+      <div class="day-arrows">
+        <button class="arrow-btn" onclick="shiftDay(-1)" title="Día anterior">&#8249;</button>
+        <button class="arrow-btn" onclick="shiftDay(0)"  title="Hoy">&#xb7;</button>
+        <button class="arrow-btn" onclick="shiftDay(1)"  title="Día siguiente">&#8250;</button>
+      </div>
+    </div>
+
+    <!-- Resumen del día -->
+    <div class="summary-strip">
+      <div class="stat-cell">
+        <div class="stat-n"      id="s-meals">0</div>
+        <div class="stat-l">Comidas</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-n gold" id="s-ings">0</div>
+        <div class="stat-l">Ingredientes</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-n"      id="s-acts">0</div>
+        <div class="stat-l">Actividades</div>
+      </div>
+    </div>
+
+    <!-- Lista de comidas -->
+    <div class="section-hd">Comidas</div>
+    <div id="meals-list"></div>
+
+    <div class="section-spacer"></div>
+
+    <!-- Lista de actividades -->
+    <div class="section-hd">Esfuerzo físico</div>
+    <div id="acts-list"></div>
+
+  </div><!-- /panel-hoy -->
+
+  <!-- ── PANEL: HISTORIAL ────────────────────────────────── -->
+  <div class="panel" id="panel-historial">
+    <div class="day-bar">
+      <div class="day-bar-title">Historial</div>
+    </div>
+    <div id="hist-list"></div>
+  </div><!-- /panel-historial -->
+
+  <!-- ── PANEL: EXPORTAR ─────────────────────────────────── -->
+  <div class="panel" id="panel-exportar">
+    <div class="day-bar">
+      <div class="day-bar-title">Exportar datos</div>
+    </div>
+
+    <!-- JSON -->
+    <div class="exp-block">
+      <div class="exp-block-title">
+        JSON <span class="exp-badge">Recomendado para IAs</span>
+      </div>
+      <div class="exp-desc">
+        Estructura completa del historial. Pégalo en cualquier IA para análisis
+        de alimentación, estimación calórica o recomendaciones personalizadas.
+      </div>
+      <div class="exp-btns">
+        <button class="btn-exp" onclick="doExport('json')">&#8595; Descargar</button>
+        <button class="btn-exp" onclick="doCopy('json')">Copiar</button>
+        <button class="btn-exp" onclick="doPreview('json', 'prev-json')">Vista previa</button>
+      </div>
+      <pre class="preview" id="prev-json"></pre>
+    </div>
+
+    <!-- CSV -->
+    <div class="exp-block">
+      <div class="exp-block-title">CSV</div>
+      <div class="exp-desc">Compatible con Excel, LibreOffice Calc y Google Sheets.</div>
+      <div class="exp-btns">
+        <button class="btn-exp" onclick="doExport('csv')">&#8595; Descargar</button>
+      </div>
+    </div>
+
+    <!-- Markdown -->
+    <div class="exp-block">
+      <div class="exp-block-title">Markdown</div>
+      <div class="exp-desc">Legible para humanos e IAs. Ideal para notas o chats.</div>
+      <div class="exp-btns">
+        <button class="btn-exp" onclick="doExport('md')">&#8595; Descargar</button>
+        <button class="btn-exp" onclick="doCopy('md')">Copiar</button>
+        <button class="btn-exp" onclick="doPreview('md', 'prev-md')">Vista previa</button>
+      </div>
+      <pre class="preview" id="prev-md"></pre>
+    </div>
+
+    <!-- Zona de peligro -->
+    <div class="exp-block" style="border-color: rgba(192, 97, 74, 0.2)">
+      <div class="exp-block-title" style="color: var(--red)">Zona de peligro</div>
+      <div class="exp-desc">Elimina todos los datos guardados. Acción irreversible.</div>
+      <div class="exp-btns">
+        <button class="btn-exp danger" onclick="nukAll()">Borrar todo</button>
+      </div>
+    </div>
+
+  </div><!-- /panel-exportar -->
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FAB — Botón flotante de acción
+════════════════════════════════════════════════════════════ -->
+<div class="fab-wrap" id="fab-wrap">
+
+  <!-- Opciones expandibles -->
+  <div class="fab-options" id="fab-opts">
+    <div class="fab-row" onclick="openMealModal()">
+      <div class="fab-row-label">Registrar comida</div>
+      <button class="fab-mini fab-mini-meal">&#127869;</button>
+    </div>
+    <div class="fab-row" onclick="openActModal()">
+      <div class="fab-row-label">Registrar actividad</div>
+      <button class="fab-mini fab-mini-activity">&#9889;</button>
+    </div>
+  </div>
+
+  <!-- Botón principal -->
+  <button class="fab-main" id="fab-btn" onclick="toggleFab()">+</button>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — REGISTRAR COMIDA
+════════════════════════════════════════════════════════════ -->
+<div class="backdrop" id="meal-bd">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Registrar comida</div>
+
+    <!-- Tipo de comida -->
+    <div class="fg">
+      <label class="fl">Tipo</label>
+      <div class="type-grid">
+        <div class="type-pill" data-v="desayuno" onclick="pickType(this)">&#127749; Desayuno</div>
+        <div class="type-pill" data-v="almuerzo" onclick="pickType(this)">&#9728; Almuerzo</div>
+        <div class="type-pill" data-v="cena"     onclick="pickType(this)">&#127769; Cena</div>
+        <div class="type-pill" data-v="merienda" onclick="pickType(this)">&#127822; Merienda</div>
+      </div>
+    </div>
+
+    <!-- Nombre -->
+    <div class="fg">
+      <label class="fl">Nombre (opcional)</label>
+      <input type="text" id="m-name" placeholder="ej. Desayuno rápido, Almuerzo en casa…">
+    </div>
+
+    <!-- Hora -->
+    <div class="fg">
+      <label class="fl">Hora</label>
+      <input type="time" id="m-time">
+    </div>
+
+    <!-- Ingredientes -->
+    <div class="fg">
+      <label class="fl">Ingredientes</label>
+      <div class="ing-row">
+        <input
+          type="text"
+          id="m-ing"
+          placeholder="ej. 2 huevos, 1 taza de arroz…"
+          onkeydown="if (event.key === 'Enter') { addIng(); event.preventDefault(); }"
+        >
+        <button class="btn-add" onclick="addIng()">+</button>
+      </div>
+      <div class="ing-chips" id="m-chips"></div>
+    </div>
+
+    <!-- Notas -->
+    <div class="fg">
+      <label class="fl">Notas (opcional)</label>
+      <textarea id="m-notes" placeholder="ej. Poco aceite, quedé satisfecho, comí rápido…"></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="saveMeal()">Guardar comida</button>
+    <button class="btn-ghost"   onclick="closeMealModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — REGISTRAR ACTIVIDAD
+════════════════════════════════════════════════════════════ -->
+<div class="backdrop" id="act-bd">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Registrar esfuerzo físico</div>
+
+    <div class="fg">
+      <label class="fl">Descripción</label>
+      <textarea
+        id="a-desc"
+        placeholder="ej. Caminé 45 min a buen ritmo, 30 min en bici, cargué cajas…"
+        style="min-height: 110px"
+      ></textarea>
+    </div>
+
+    <div class="fg">
+      <label class="fl">Hora</label>
+      <input type="time" id="a-time">
+    </div>
+
+    <button class="btn-primary" onclick="saveAct()">Guardar actividad</button>
+    <button class="btn-ghost"   onclick="closeActModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — SELECTOR DE FECHA
+════════════════════════════════════════════════════════════ -->
+<div class="backdrop" id="dp-bd">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Ir a una fecha</div>
+
+    <div class="fg">
+      <input type="date" id="dp-input">
+    </div>
+
+    <button class="btn-primary" onclick="applyDate()">Ir</button>
+    <button class="btn-ghost"   onclick="closeDatePicker()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOAST — Notificaciones efímeras
+════════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- Lógica -->
+<script src="nutrilog.js"></script>
+
+</body>
+</html>
