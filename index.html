@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111210">
+<meta name="description" content="NutriLog — Registro de comidas y actividad física">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>NutriLog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root {
+  --bg:        #111210;
+  --surface:   #1a1b18;
+  --surface2:  #212320;
+  --surface3:  #282a26;
+  --border:    #2e3029;
+  --border2:   #3a3d34;
+  --text:      #e8e6df;
+  --text2:     #9b9a93;
+  --text3:     #5c5c55;
+  --accent:    #c8a96e;
+  --accent-bg: rgba(200,169,110,0.08);
+  --accent-bd: rgba(200,169,110,0.22);
+  --red:       #c0614a;
+  --red-bg:    rgba(192,97,74,0.08);
+  --radius:    12px;
+  --f: 'Instrument Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.022;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ─── HEADER ────────────────────────────────────────── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(17,18,16,0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 56px;
+}
+.logo {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+.logo em { font-style: normal; color: var(--accent); }
+
+.date-chip {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  padding: 5px 12px;
+  border-radius: 99px;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.date-chip:hover { color: var(--accent); border-color: var(--accent-bd); }
+
+/* ─── NAV ─────────────────────────────────────────── */
+nav {
+  display: flex; gap: 2px;
+  padding: 10px 16px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+  background: var(--bg);
+  position: sticky; top: 56px; z-index: 90;
+}
+nav::-webkit-scrollbar { display: none; }
+
+.tab {
+  font-family: var(--f);
+  font-size: 0.8rem; font-weight: 500;
+  padding: 8px 16px;
+  border: none; border-bottom: 2px solid transparent;
+  background: none; color: var(--text3);
+  cursor: pointer; white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  letter-spacing: 0.01em; margin-bottom: -1px;
+}
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* ─── LAYOUT ────────────────────────────────────────── */
+main { max-width: 680px; margin: 0 auto; padding: 0 16px 120px; position: relative; z-index: 1; }
+
+.panel { display: none; }
+.panel.active { display: block; animation: rise 0.22s ease both; }
+@keyframes rise { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+/* ─── DAY BAR ───────────────────────────────────────── */
+.day-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 0 14px;
+}
+.day-bar-title { font-size: 1rem; font-weight: 600; color: var(--text); letter-spacing: -0.2px; }
+.day-arrows { display: flex; gap: 4px; }
+.arrow-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid var(--border2); background: var(--surface2); color: var(--text2);
+  cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; line-height: 1;
+}
+.arrow-btn:hover { border-color: var(--accent-bd); color: var(--accent); background: var(--accent-bg); }
+
+/* ─── SUMMARY STRIP ─────────────────────────────────── */
+.summary-strip {
+  display: flex; gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 24px;
+}
+.stat-cell {
+  flex: 1; background: var(--surface); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.stat-cell:first-child { border-radius: calc(var(--radius) - 1px) 0 0 calc(var(--radius) - 1px); }
+.stat-cell:last-child  { border-radius: 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0; }
+.stat-n {
+  font-size: 1.6rem; font-weight: 700; line-height: 1;
+  color: var(--text); letter-spacing: -1px;
+}
+.stat-n.gold { color: var(--accent); }
+.stat-l { font-size: 0.65rem; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ─── SECTION HEADER ────────────────────────────────── */
+.section-hd {
+  font-size: 0.68rem; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin: 0 0 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-hd::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.section-spacer { height: 24px; }
+
+/* ─── CARDS ─────────────────────────────────────────── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+.card:hover { border-color: var(--border2); }
+.card-top {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 10px;
+}
+.card-left { flex: 1; min-width: 0; }
+.card-name {
+  font-size: 0.9rem; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; letter-spacing: -0.1px;
+}
+.meal-tag {
+  font-size: 0.6rem; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+}
+.tag-desayuno { background: rgba(200,169,110,0.12); color: #c8a96e; }
+.tag-almuerzo { background: rgba(160,184,112,0.12); color: #a0b870; }
+.tag-cena     { background: rgba(127,160,200,0.12); color: #7fa0c8; }
+.tag-merienda { background: rgba(200,138,110,0.12); color: #c88a6e; }
+
+.card-meta { font-size: 0.72rem; color: var(--text3); margin-top: 3px; }
+.card-delete {
+  background: none; border: 1px solid transparent; color: var(--text3);
+  width: 28px; height: 28px; border-radius: 7px;
+  cursor: pointer; font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.15s; line-height: 1;
+}
+.card-delete:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.chip {
+  font-size: 0.7rem; font-weight: 500;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text2); padding: 3px 9px; border-radius: 5px;
+}
+.card-note {
+  font-size: 0.75rem; color: var(--text2); margin-top: 10px;
+  line-height: 1.55; padding-top: 10px;
+  border-top: 1px solid var(--border); font-style: italic;
+}
+.card.activity { border-left: 2px solid var(--text3); }
+
+/* ─── EMPTY ─────────────────────────────────────────── */
+.empty { text-align: center; padding: 36px 24px; color: var(--text3); font-size: 0.8rem; line-height: 1.9; }
+.empty-icon { font-size: 1.8rem; margin-bottom: 8px; opacity: 0.35; }
+
+/* ─── FAB ───────────────────────────────────────────── */
+.fab-wrap {
+  position: fixed; bottom: 28px; right: 20px; z-index: 200;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+.fab-options {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  max-height: 0; overflow: hidden; transition: max-height 0.28s ease;
+}
+.fab-options.open { max-height: 200px; }
+.fab-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.fab-row-label {
+  font-size: 0.75rem; font-weight: 500;
+  background: var(--surface); border: 1px solid var(--border2); color: var(--text2);
+  padding: 5px 13px; border-radius: 8px; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.fab-mini {
+  width: 40px; height: 40px; border-radius: 10px; border: none;
+  cursor: pointer; font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.12s; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+.fab-mini:active { transform: scale(0.92); }
+.fab-mini-meal     { background: var(--accent); color: #1a1400; }
+.fab-mini-activity { background: var(--surface3); color: var(--text); border: 1px solid var(--border2); }
+.fab-main {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: var(--accent); color: #1a1400; border: none;
+  font-size: 1.5rem; font-weight: 300;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 24px rgba(200,169,110,0.25), 0 2px 8px rgba(0,0,0,0.5);
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s; line-height: 1;
+}
+.fab-main:hover { transform: scale(1.04); box-shadow: 0 8px 30px rgba(200,169,110,0.35); }
+.fab-main.open {
+  background: var(--surface3); color: var(--text2);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4); transform: rotate(45deg);
+}
+
+/* ─── MODALS ────────────────────────────────────────── */
+.backdrop {
+  position: fixed; inset: 0;
+  background: rgba(8,8,7,0.8);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  z-index: 500; display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.backdrop.open { opacity: 1; pointer-events: all; }
+.sheet {
+  background: var(--surface);
+  border: 1px solid var(--border2); border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  padding: 12px 20px 40px;
+  width: 100%; max-width: 680px;
+  transform: translateY(32px);
+  transition: transform 0.28s cubic-bezier(0.22,1,0.36,1);
+  max-height: 92dvh; overflow-y: auto; scrollbar-width: none;
+}
+.sheet::-webkit-scrollbar { display: none; }
+.backdrop.open .sheet { transform: translateY(0); }
+.sheet-handle { width: 36px; height: 3px; background: var(--border2); border-radius: 99px; margin: 0 auto 20px; }
+.sheet-title { font-size: 1rem; font-weight: 700; margin-bottom: 22px; letter-spacing: -0.2px; }
+
+/* ─── FORM ───────────────────────────────────────────── */
+.fg { margin-bottom: 16px; }
+.fl {
+  display: block; font-size: 0.68rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 7px;
+}
+input[type=text], input[type=time], input[type=date], textarea {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 9px; color: var(--text); font-family: var(--f);
+  font-size: 0.875rem; padding: 11px 13px; outline: none;
+  transition: border-color 0.15s; -webkit-appearance: none; appearance: none; color-scheme: dark;
+}
+input:focus, textarea:focus { border-color: var(--accent-bd); }
+textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+::placeholder { color: var(--text3); }
+
+.type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.type-pill {
+  padding: 9px 10px; border-radius: 9px;
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--text2); font-family: var(--f); font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; text-align: center; transition: all 0.15s; letter-spacing: 0.01em;
+}
+.type-pill:hover { border-color: var(--accent-bd); color: var(--text); }
+.type-pill.sel { background: var(--accent-bg); border-color: var(--accent-bd); color: var(--accent); font-weight: 600; }
+
+.ing-row { display: flex; gap: 7px; margin-bottom: 8px; }
+.ing-row input { flex: 1; }
+.btn-add {
+  background: var(--accent); color: #1a1400; border: none; border-radius: 9px;
+  padding: 0 16px; font-size: 1.2rem; cursor: pointer; line-height: 1;
+  transition: opacity 0.15s; flex-shrink: 0;
+}
+.btn-add:hover { opacity: 0.85; }
+
+.ing-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.ing-chip {
+  font-size: 0.72rem; font-weight: 500;
+  background: var(--surface3); border: 1px solid var(--border2); color: var(--text2);
+  padding: 4px 9px 4px 11px; border-radius: 6px;
+  display: flex; align-items: center; gap: 7px;
+}
+.ing-chip-rm {
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: 0.7rem; line-height: 1; padding: 0; transition: color 0.1s;
+}
+.ing-chip-rm:hover { color: var(--red); }
+
+.btn-primary {
+  width: 100%; background: var(--accent); color: #1a1400; border: none;
+  border-radius: 10px; padding: 13px; font-family: var(--f);
+  font-size: 0.9rem; font-weight: 700; cursor: pointer; margin-top: 20px;
+  transition: opacity 0.15s, transform 0.1s; letter-spacing: 0.01em;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-ghost {
+  width: 100%; background: none; color: var(--text2);
+  border: 1px solid var(--border2); border-radius: 10px; padding: 11px;
+  font-family: var(--f); font-size: 0.85rem; font-weight: 500;
+  cursor: pointer; margin-top: 8px; transition: all 0.15s;
+}
+.btn-ghost:hover { border-color: var(--accent-bd); color: var(--text); }
+
+/* ─── HISTORY ───────────────────────────────────────── */
+.hist-day { margin-bottom: 28px; }
+.hist-day-hd {
+  font-size: 0.72rem; font-weight: 600; color: var(--text3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 10px;
+}
+.hist-count {
+  font-size: 0.65rem; background: var(--surface2); border: 1px solid var(--border2);
+  padding: 2px 9px; border-radius: 99px; color: var(--text3);
+  font-weight: 500; text-transform: none; letter-spacing: 0;
+}
+
+/* ─── EXPORT ────────────────────────────────────────── */
+.exp-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
+}
+.exp-block-title { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.exp-badge {
+  font-size: 0.58rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em;
+  background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-bd);
+  padding: 2px 7px; border-radius: 4px;
+}
+.exp-desc { font-size: 0.75rem; color: var(--text3); line-height: 1.6; margin-bottom: 14px; }
+.exp-btns { display: flex; flex-wrap: wrap; gap: 7px; }
+.btn-exp {
+  font-family: var(--f); font-size: 0.75rem; font-weight: 500;
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+  padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: all 0.15s; white-space: nowrap;
+}
+.btn-exp:hover { border-color: var(--accent-bd); color: var(--accent); background: var(--accent-bg); }
+.btn-exp.danger:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+.preview {
+  margin-top: 12px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; font-family: 'Courier New', monospace;
+  font-size: 0.68rem; color: var(--text3); max-height: 200px; overflow-y: auto;
+  white-space: pre; display: none;
+}
+.preview.show { display: block; }
+
+/* ─── TOAST ─────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 88px; left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--surface); border: 1px solid var(--border2);
+  color: var(--text2); font-size: 0.75rem; font-weight: 500;
+  padding: 8px 18px; border-radius: 99px; z-index: 999;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; white-space: nowrap;
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (min-width: 600px) {
+  main { padding: 0 24px 120px; }
+  .fab-wrap { right: 32px; bottom: 36px; }
+  .type-grid { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Nutri<em>Log</em></div>
+  <div class="date-chip" id="hdr-date" onclick="openDatePicker()">—</div>
+</header>
+
+<nav>
+  <button class="tab active" onclick="switchTab('hoy',this)">Hoy</button>
+  <button class="tab"        onclick="switchTab('historial',this)">Historial</button>
+  <button class="tab"        onclick="switchTab('exportar',this)">Exportar</button>
+</nav>
+
+<main>
+
+<!-- HOY -->
+<div class="panel active" id="panel-hoy">
+  <div class="day-bar">
+    <div class="day-bar-title" id="hoy-title">—</div>
+    <div class="day-arrows">
+      <button class="arrow-btn" onclick="shiftDay(-1)">&#8249;</button>
+      <button class="arrow-btn" onclick="shiftDay(0)" title="Hoy">&#xb7;</button>
+      <button class="arrow-btn" onclick="shiftDay(1)">&#8250;</button>
+    </div>
+  </div>
+  <div class="summary-strip">
+    <div class="stat-cell"><div class="stat-n" id="s-meals">0</div><div class="stat-l">Comidas</div></div>
+    <div class="stat-cell"><div class="stat-n gold" id="s-ings">0</div><div class="stat-l">Ingredientes</div></div>
+    <div class="stat-cell"><div class="stat-n" id="s-acts">0</div><div class="stat-l">Actividades</div></div>
+  </div>
+  <div class="section-hd">Comidas</div>
+  <div id="meals-list"></div>
+  <div class="section-spacer"></div>
+  <div class="section-hd">Esfuerzo físico</div>
+  <div id="acts-list"></div>
+</div>
+
+<!-- HISTORIAL -->
+<div class="panel" id="panel-historial">
+  <div class="day-bar"><div class="day-bar-title">Historial</div></div>
+  <div id="hist-list"></div>
+</div>
+
+<!-- EXPORTAR -->
+<div class="panel" id="panel-exportar">
+  <div class="day-bar"><div class="day-bar-title">Exportar datos</div></div>
+
+  <div class="exp-block">
+    <div class="exp-block-title">JSON <span class="exp-badge">Recomendado para IAs</span></div>
+    <div class="exp-desc">Estructura completa del historial. Pégalo en cualquier IA para análisis de alimentación, estimación calórica o recomendaciones personalizadas.</div>
+    <div class="exp-btns">
+      <button class="btn-exp" onclick="doExport('json')">&#8595; Descargar</button>
+      <button class="btn-exp" onclick="doCopy('json')">Copiar</button>
+      <button class="btn-exp" onclick="doPreview('json','prev-json')">Vista previa</button>
+    </div>
+    <pre class="preview" id="prev-json"></pre>
+  </div>
+
+  <div class="exp-block">
+    <div class="exp-block-title">CSV</div>
+    <div class="exp-desc">Compatible con Excel, LibreOffice Calc y Google Sheets.</div>
+    <div class="exp-btns">
+      <button class="btn-exp" onclick="doExport('csv')">&#8595; Descargar</button>
+    </div>
+  </div>
+
+  <div class="exp-block">
+    <div class="exp-block-title">Markdown</div>
+    <div class="exp-desc">Legible para humanos e IAs. Ideal para notas o chats.</div>
+    <div class="exp-btns">
+      <button class="btn-exp" onclick="doExport('md')">&#8595; Descargar</button>
+      <button class="btn-exp" onclick="doCopy('md')">Copiar</button>
+      <button class="btn-exp" onclick="doPreview('md','prev-md')">Vista previa</button>
+    </div>
+    <pre class="preview" id="prev-md"></pre>
+  </div>
+
+  <div class="exp-block" style="border-color:rgba(192,97,74,0.2)">
+    <div class="exp-block-title" style="color:var(--red)">Zona de peligro</div>
+    <div class="exp-desc">Elimina todos los datos guardados. Acción irreversible.</div>
+    <div class="exp-btns">
+      <button class="btn-exp danger" onclick="nukAll()">Borrar todo</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- FAB -->
+<div class="fab-wrap" id="fab-wrap">
+  <div class="fab-options" id="fab-opts">
+    <div class="fab-row" onclick="openMealModal()">
+      <div class="fab-row-label">Registrar comida</div>
+      <button class="fab-mini fab-mini-meal">&#127869;</button>
+    </div>
+    <div class="fab-row" onclick="openActModal()">
+      <div class="fab-row-label">Registrar actividad</div>
+      <button class="fab-mini fab-mini-activity">&#9889;</button>
+    </div>
+  </div>
+  <button class="fab-main" id="fab-btn" onclick="toggleFab()">+</button>
+</div>
+
+<!-- MODAL COMIDA -->
+<div class="backdrop" id="meal-bd">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Registrar comida</div>
+    <div class="fg">
+      <label class="fl">Tipo</label>
+      <div class="type-grid" id="type-grid">
+        <div class="type-pill" data-v="desayuno" onclick="pickType(this)">&#127749; Desayuno</div>
+        <div class="type-pill" data-v="almuerzo" onclick="pickType(this)">&#9728; Almuerzo</div>
+        <div class="type-pill" data-v="cena"     onclick="pickType(this)">&#127769; Cena</div>
+        <div class="type-pill" data-v="merienda" onclick="pickType(this)">&#127822; Merienda</div>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Nombre (opcional)</label>
+      <input type="text" id="m-name" placeholder="ej. Desayuno rápido, Almuerzo en casa…">
+    </div>
+    <div class="fg">
+      <label class="fl">Hora</label>
+      <input type="time" id="m-time">
+    </div>
+    <div class="fg">
+      <label class="fl">Ingredientes</label>
+      <div class="ing-row">
+        <input type="text" id="m-ing" placeholder="ej. 2 huevos, 1 taza de arroz…" onkeydown="if(event.key==='Enter'){addIng();event.preventDefault();}">
+        <button class="btn-add" onclick="addIng()">+</button>
+      </div>
+      <div class="ing-chips" id="m-chips"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Notas (opcional)</label>
+      <textarea id="m-notes" placeholder="ej. Poco aceite, quedé satisfecho, comí rápido…"></textarea>
+    </div>
+    <button class="btn-primary" onclick="saveMeal()">Guardar comida</button>
+    <button class="btn-ghost"   onclick="closeMealModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL ACTIVIDAD -->
+<div class="backdrop" id="act-bd">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Registrar esfuerzo físico</div>
+    <div class="fg">
+      <label class="fl">Descripción</label>
+      <textarea id="a-desc" placeholder="ej. Caminé 45 min a buen ritmo, 30 min en bici, cargué cajas…" style="min-height:110px"></textarea>
+    </div>
+    <div class="fg">
+      <label class="fl">Hora</label>
+      <input type="time" id="a-time">
+    </div>
+    <button class="btn-primary" onclick="saveAct()">Guardar actividad</button>
+    <button class="btn-ghost"   onclick="closeActModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL FECHA -->
+<div class="backdrop" id="dp-bd">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Ir a una fecha</div>
+    <div class="fg"><input type="date" id="dp-input"></div>
+    <button class="btn-primary" onclick="applyDate()">Ir</button>
+    <button class="btn-ghost"   onclick="closeDatePicker()">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* STORAGE */
+const KEY = 'nutrilog_v2';
+const load    = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+const persist = d => localStorage.setItem(KEY, JSON.stringify(d));
+const getDay  = k => { const d=load(); return d[k]||{meals:[],activities:[]}; };
+const saveDay = (k,v) => { const d=load(); d[k]=v; persist(d); };
+
+/* DATE */
+let curDate = todayKey();
+function todayKey() { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n) { return String(n).padStart(2,'0'); }
+function parseKey(k) { const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
+function shiftKey(k,n) { const d=parseKey(k); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+
+const MES  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DIA  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DIAS_S = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MES_S  = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+function labelDate(k) {
+  const d=parseKey(k), [y,m,dd]=[k.split('-')[0], k.split('-')[1]-1, k.split('-')[2]-0];
+  const t=todayKey(), y2=shiftKey(t,-1);
+  if(k===t)  return `Hoy \u2014 ${DIA[d.getDay()]}, ${dd} de ${MES[m]}`;
+  if(k===y2) return `Ayer \u2014 ${DIA[d.getDay()]}, ${dd} de ${MES[m]}`;
+  return `${DIA[d.getDay()]}, ${dd} de ${MES[m]} ${y}`;
+}
+function labelShort(k) { const d=parseKey(k), m=k.split('-')[1]-1, dd=k.split('-')[2]-0, y=k.split('-')[0]; return `${DIAS_S[d.getDay()]} ${dd} ${MES_S[m]} ${y}`; }
+
+function shiftDay(n) { curDate = n===0 ? todayKey() : shiftKey(curDate,n); renderHoy(); }
+
+/* TABS */
+function switchTab(name,btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`panel-${name}`).classList.add('active');
+  document.getElementById('fab-wrap').style.display = name==='hoy' ? 'flex' : 'none';
+  if(name==='historial') renderHistory();
+}
+
+/* RENDER HOY */
+function renderHoy() {
+  document.getElementById('hoy-title').textContent = labelDate(curDate);
+  document.getElementById('hdr-date').textContent  = curDate;
+  const day=getDay(curDate);
+  const ti=day.meals.reduce((a,m)=>a+m.ingredients.length,0);
+  document.getElementById('s-meals').textContent = day.meals.length;
+  document.getElementById('s-ings').textContent  = ti;
+  document.getElementById('s-acts').textContent  = day.activities.length;
+  const ml=document.getElementById('meals-list');
+  ml.innerHTML = day.meals.length ? day.meals.map((m,i)=>mealCard(m,i,curDate)).join('') : `<div class="empty"><div class="empty-icon">&#127869;</div>Sin comidas registradas.<br>Toca + para a&ntilde;adir.</div>`;
+  const al=document.getElementById('acts-list');
+  al.innerHTML = day.activities.length ? day.activities.map((a,i)=>actCard(a,i,curDate)).join('') : `<div class="empty"><div class="empty-icon">&#9889;</div>Sin actividad registrada.<br>Toca + para a&ntilde;adir.</div>`;
+}
+
+/* CARDS */
+function mealCard(m,i,dk) {
+  const icon={desayuno:'🌅',almuerzo:'☀️',cena:'🌙',merienda:'🍎'}[m.type]||'🍴';
+  const chips=m.ingredients.map(g=>`<span class="chip">${esc(g)}</span>`).join('');
+  const note=m.notes?`<div class="card-note">${esc(m.notes)}</div>`:'';
+  const del=dk===curDate?`delMeal(${i})`:`delMealH('${dk}',${i});renderHistory()`;
+  return `<div class="card"><div class="card-top"><div class="card-left"><div class="card-name">${icon} ${esc(m.name||m.type)}<span class="meal-tag tag-${m.type}">${m.type}</span></div>${m.time?`<div class="card-meta">&#128336; ${m.time}</div>`:''}</div><button class="card-delete" onclick="${del}">&#10005;</button></div>${chips?`<div class="chips">${chips}</div>`:''}${note}</div>`;
+}
+function actCard(a,i,dk) {
+  const del=dk===curDate?`delAct(${i})`:`delActH('${dk}',${i});renderHistory()`;
+  return `<div class="card activity"><div class="card-top"><div class="card-left"><div class="card-name">&#9889; Esfuerzo f&iacute;sico</div>${a.time?`<div class="card-meta">&#128336; ${a.time}</div>`:''}</div><button class="card-delete" onclick="${del}">&#10005;</button></div><div class="card-note">${esc(a.description)}</div></div>`;
+}
+
+/* MEAL MODAL */
+let ings=[];
+function openMealModal() {
+  closeFab(); ings=[];
+  ['m-name','m-notes','m-ing'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-time').value=nowHHMM();
+  document.getElementById('m-chips').innerHTML='';
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('sel'));
+  document.getElementById('meal-bd').classList.add('open');
+}
+function closeMealModal() { document.getElementById('meal-bd').classList.remove('open'); }
+function pickType(el) { document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('sel')); el.classList.add('sel'); }
+function addIng() { const i=document.getElementById('m-ing'); const v=i.value.trim(); if(!v)return; ings.push(v); i.value=''; renderIngs(); i.focus(); }
+function removeIng(i) { ings.splice(i,1); renderIngs(); }
+function renderIngs() { document.getElementById('m-chips').innerHTML=ings.map((g,i)=>`<span class="ing-chip">${esc(g)}<button class="ing-chip-rm" onclick="removeIng(${i})">&#10005;</button></span>`).join(''); }
+function saveMeal() {
+  const te=document.querySelector('.type-pill.sel');
+  const type=te?te.dataset.v:'merienda';
+  const name=document.getElementById('m-name').value.trim()||type;
+  const time=document.getElementById('m-time').value;
+  const notes=document.getElementById('m-notes').value.trim();
+  const day=getDay(curDate);
+  day.meals.push({id:Date.now(),type,name,time,ingredients:[...ings],notes});
+  saveDay(curDate,day); closeMealModal(); renderHoy(); toast('Comida guardada');
+}
+function delMeal(i) { const d=getDay(curDate); d.meals.splice(i,1); saveDay(curDate,d); renderHoy(); toast('Eliminado'); }
+function delMealH(k,i) { const d=getDay(k); d.meals.splice(i,1); saveDay(k,d); toast('Eliminado'); }
+
+/* ACTIVITY MODAL */
+function openActModal() { closeFab(); document.getElementById('a-desc').value=''; document.getElementById('a-time').value=nowHHMM(); document.getElementById('act-bd').classList.add('open'); }
+function closeActModal() { document.getElementById('act-bd').classList.remove('open'); }
+function saveAct() {
+  const desc=document.getElementById('a-desc').value.trim();
+  if(!desc){toast('Describe la actividad');return;}
+  const time=document.getElementById('a-time').value;
+  const day=getDay(curDate);
+  day.activities.push({id:Date.now(),description:desc,time});
+  saveDay(curDate,day); closeActModal(); renderHoy(); toast('Actividad guardada');
+}
+function delAct(i) { const d=getDay(curDate); d.activities.splice(i,1); saveDay(curDate,d); renderHoy(); toast('Eliminado'); }
+function delActH(k,i) { const d=getDay(k); d.activities.splice(i,1); saveDay(k,d); toast('Eliminado'); }
+
+/* DATE PICKER */
+function openDatePicker() { document.getElementById('dp-input').value=curDate; document.getElementById('dp-bd').classList.add('open'); }
+function closeDatePicker() { document.getElementById('dp-bd').classList.remove('open'); }
+function applyDate() { const v=document.getElementById('dp-input').value; if(v){curDate=v;renderHoy();} closeDatePicker(); }
+
+/* HISTORY */
+function renderHistory() {
+  const data=load(), dates=Object.keys(data).sort((a,b)=>b.localeCompare(a));
+  const cont=document.getElementById('hist-list');
+  if(!dates.length){cont.innerHTML=`<div class="empty"><div class="empty-icon">&#128197;</div>No hay registros a&uacute;n.</div>`;return;}
+  cont.innerHTML=dates.map(k=>{
+    const d=data[k], n=d.meals.length+d.activities.length;
+    const cards=[...d.meals.map((m,i)=>mealCard(m,i,k)),...d.activities.map((a,i)=>actCard(a,i,k))].join('');
+    return `<div class="hist-day"><div class="hist-day-hd">${labelShort(k)}<span class="hist-count">${n} registro${n!==1?'s':''}</span></div>${cards||`<div class="empty" style="padding:12px">Sin datos</div>`}</div>`;
+  }).join('');
+}
+
+/* EXPORT */
+function buildJSON() {
+  const data=load(), dates=Object.keys(data).sort();
+  return JSON.stringify({exportado_en:new Date().toISOString(),app:'NutriLog',nota:'Registro de alimentación. Ingredientes en texto libre con cantidades aproximadas.',dias:dates.map(k=>({fecha:k,comidas:data[k].meals.map(m=>({tipo:m.type,nombre:m.name,hora:m.time||null,ingredientes:m.ingredients,notas:m.notes||null})),actividad_fisica:data[k].activities.map(a=>({hora:a.time||null,descripcion:a.description}))}))},null,2);
+}
+function buildCSV() {
+  const data=load(), dates=Object.keys(data).sort();
+  const rows=[['fecha','tipo','nombre','hora','ingredientes','notas']];
+  dates.forEach(k=>{data[k].meals.forEach(m=>rows.push([k,m.type,m.name||'',m.time||'',m.ingredients.join(' | '),m.notes||'']));data[k].activities.forEach(a=>rows.push([k,'actividad','',a.time||'','',a.description]));});
+  return rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+}
+function buildMD() {
+  const data=load(), dates=Object.keys(data).sort((a,b)=>b.localeCompare(a));
+  let md=`# NutriLog \u2014 Historial\n\n_Exportado: ${new Date().toLocaleString('es-CO')}_\n\n---\n\n`;
+  dates.forEach(k=>{
+    const d=data[k]; md+=`## ${labelShort(k)}\n\n`;
+    if(d.meals.length){md+=`### Comidas\n\n`;d.meals.forEach(m=>{md+=`**${m.type.charAt(0).toUpperCase()+m.type.slice(1)}`;if(m.name&&m.name!==m.type)md+=` \u2014 ${m.name}`;md+=`**`;if(m.time)md+=` _(${m.time})_`;md+=`\n`;if(m.ingredients.length)md+=`- Ingredientes: ${m.ingredients.join(', ')}\n`;if(m.notes)md+=`- Notas: ${m.notes}\n`;md+='\n';});}
+    if(d.activities.length){md+=`### Actividad f\u00edsica\n\n`;d.activities.forEach(a=>{if(a.time)md+=`_(${a.time})_ `;md+=`${a.description}\n\n`;});}
+    md+='---\n\n';
+  });
+  return md;
+}
+function doExport(fmt) {
+  const map={json:['application/json','json',buildJSON],csv:['text/csv','csv',buildCSV],md:['text/markdown','md',buildMD]};
+  const [mime,ext,fn]=map[fmt];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([fn()],{type:mime}));
+  a.download=`nutrilog_${todayKey()}.${ext}`; a.click(); toast(`Descargando .${ext}`);
+}
+function doCopy(fmt) { navigator.clipboard.writeText(fmt==='json'?buildJSON():buildMD()).then(()=>toast('Copiado')).catch(()=>toast('No se pudo copiar')); }
+function doPreview(fmt,id) {
+  const el=document.getElementById(id);
+  if(el.classList.contains('show')){el.classList.remove('show');return;}
+  document.querySelectorAll('.preview').forEach(p=>p.classList.remove('show'));
+  const txt=fmt==='json'?buildJSON():buildMD();
+  el.textContent=txt.slice(0,2000)+(txt.length>2000?'\n\n[... truncado]':''); el.classList.add('show');
+}
+function nukAll() { if(!confirm('Borrar todos los datos? Esta acción no se puede deshacer.'))return; localStorage.removeItem(KEY); renderHoy(); toast('Datos eliminados'); }
+
+/* FAB */
+function toggleFab() { const o=document.getElementById('fab-opts'),b=document.getElementById('fab-btn'),open=o.classList.toggle('open'); b.classList.toggle('open',open); }
+function closeFab() { document.getElementById('fab-opts').classList.remove('open'); document.getElementById('fab-btn').classList.remove('open'); }
+
+/* UTILS */
+function nowHHMM() { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+let _tt;
+function toast(msg) { const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(_tt); _tt=setTimeout(()=>el.classList.remove('on'),2400); }
+
+document.querySelectorAll('.backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd){bd.classList.remove('open');closeFab();}}));
+
+/* PWA SW */
+if('serviceWorker' in navigator){const sw=`const C='nl-v2';self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(['/']))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}
+
+/* INIT */
+renderHoy();
+</script>
+</body>
+</html>
