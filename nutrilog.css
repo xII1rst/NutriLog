@@ -896,3 +896,129 @@ textarea {
   .fab-wrap  { right: 32px; bottom: 36px; }
   .type-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ── INSTALL BANNER ─────────────────────────────────────── */
+.install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--surface);
+  border-top: 1px solid var(--border2);
+  padding: 14px 18px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 680px;
+  margin: 0 auto;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Fijar centrado en escritorio */
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.4);
+}
+
+.install-banner.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.install-banner-icon {
+  flex-shrink: 0;
+}
+
+.install-banner-icon svg {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: block;
+}
+
+.install-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-banner-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.1px;
+}
+
+.install-banner-sub {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.install-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.install-btn-primary {
+  background: var(--accent);
+  color: #1a1400;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-family: var(--f);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.install-btn-primary:hover { opacity: 0.85; }
+
+.install-btn-close {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.install-btn-close:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: var(--red-bg);
+}
+
+/* Instrucciones iOS — texto expandido */
+.install-ios-steps {
+  font-size: 0.72rem;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+
+.install-ios-steps strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+@media (min-width: 600px) {
+  .install-banner {
+    border-radius: 14px 14px 0 0;
+    padding: 16px 24px 32px;
+  }
+}

@@ -719,6 +719,95 @@ document.querySelectorAll('.backdrop').forEach(bd => {
   document.head.appendChild(link);
 })();
 
+// ── PWA INSTALL PROMPT ───────────────────────────────────────
+(function initInstallBanner() {
+  const banner      = document.getElementById('install-banner');
+  const btnConfirm  = document.getElementById('install-btn-confirm');
+  const btnClose    = document.getElementById('install-btn-close');
+  const subText     = document.getElementById('install-banner-sub');
+
+  // No mostrar si ya fue descartado en esta sesión o instalado antes
+  const DISMISSED_KEY = 'nutrilog_install_dismissed';
+  if (localStorage.getItem(DISMISSED_KEY)) return;
+
+  // ── Android / Chrome: evento nativo ───────────────────────
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // Mostrar banner después de 2s para no interrumpir la carga
+    setTimeout(() => showBanner(), 2000);
+  });
+
+  btnConfirm.addEventListener('click', () => {
+    if (deferredPrompt) {
+      // Trigger del prompt nativo del navegador
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(choice => {
+        if (choice.outcome === 'accepted') {
+          hideBanner();
+          localStorage.setItem(DISMISSED_KEY, '1');
+        }
+        deferredPrompt = null;
+      });
+    } else {
+      // iOS: toggle instrucciones manuales
+      toggleIOSSteps();
+    }
+  });
+
+  btnClose.addEventListener('click', () => {
+    hideBanner();
+    localStorage.setItem(DISMISSED_KEY, '1');
+  });
+
+  // Detectar si ya está instalada como PWA standalone
+  window.addEventListener('appinstalled', () => {
+    hideBanner();
+    localStorage.setItem(DISMISSED_KEY, '1');
+  });
+
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+  // ── iOS Safari: no tiene beforeinstallprompt ──────────────
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isIOS && isSafari) {
+    subText.textContent = 'Toca Añadir para ver los pasos';
+    setTimeout(() => showBanner(), 2500);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function showBanner() {
+    banner.classList.add('show');
+    banner.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideBanner() {
+    banner.classList.remove('show');
+    banner.setAttribute('aria-hidden', 'true');
+    // Limpiar pasos iOS si estaban visibles
+    const steps = banner.querySelector('.install-ios-steps');
+    if (steps) steps.remove();
+  }
+
+  function toggleIOSSteps() {
+    const existing = banner.querySelector('.install-ios-steps');
+    if (existing) { existing.remove(); return; }
+
+    const steps = document.createElement('div');
+    steps.className = 'install-ios-steps';
+    steps.innerHTML =
+      '1. Toca el botón <strong>Compartir</strong> &#x2B06; en Safari<br>' +
+      '2. Desplázate y toca <strong>"Añadir a pantalla de inicio"</strong><br>' +
+      '3. Confirma tocando <strong>Añadir</strong> en la esquina superior';
+    banner.appendChild(steps);
+  }
+})();
+
 // ── PWA SERVICE WORKER (archivo real) ───────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
