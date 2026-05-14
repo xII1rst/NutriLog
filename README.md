@@ -1,3 +1,3 @@
 # NutriLog
 
-https://xii1rst.github.io/NutriLog/
+https://nutri-log-nine.vercel.app/
