@@ -99,17 +99,18 @@
     <div class="section-hd">Comidas</div>
     <div id="meals-list"></div>
 
-    <div class="section-spacer"></div>
-
-    <!-- Lista de actividades -->
-    <div class="section-hd">Esfuerzo físico</div>
-    <div id="acts-list"></div>
-
-    <div class="section-spacer"></div>
-
-    <!-- Lista de sueño -->
-    <div class="section-hd">Sueño</div>
-    <div id="sleep-list"></div>
+    <!-- Row inferior: Esfuerzo Físico + Sueño en T -->
+    <div class="bottom-row">
+      <div class="bottom-col">
+        <div class="section-hd">Esfuerzo físico</div>
+        <div id="acts-list"></div>
+      </div>
+      <div class="bottom-col-divider"></div>
+      <div class="bottom-col">
+        <div class="section-hd">Sueño</div>
+        <div id="sleep-list"></div>
+      </div>
+    </div>
 
   </div><!-- /panel-hoy -->
 
@@ -200,31 +201,7 @@
 
 </main>
 
-<!-- ═══════════════════════════════════════════════════════════
-     FAB — Botón flotante de acción
-════════════════════════════════════════════════════════════ -->
-<div class="fab-wrap" id="fab-wrap">
-
-  <!-- Opciones expandibles -->
-  <div class="fab-options" id="fab-opts">
-    <div class="fab-row" onclick="openMealModal()">
-      <div class="fab-row-label">Registrar comida</div>
-      <button class="fab-mini fab-mini-meal">&#127869;</button>
-    </div>
-    <div class="fab-row" onclick="openActModal()">
-      <div class="fab-row-label">Registrar actividad</div>
-      <button class="fab-mini fab-mini-activity">&#9889;</button>
-    </div>
-    <div class="fab-row" onclick="openSleepModal()">
-      <div class="fab-row-label">Registrar sueño</div>
-      <button class="fab-mini fab-mini-sleep">🌙</button>
-    </div>
-  </div>
-
-  <!-- Botón principal -->
-  <button class="fab-main" id="fab-btn" onclick="toggleFab()">+</button>
-
-</div>
+<!-- modals below -->
 
 <!-- ═══════════════════════════════════════════════════════════
      MODAL — REGISTRAR COMIDA

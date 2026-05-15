@@ -92,9 +92,6 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   document.getElementById(`panel-${name}`).classList.add('active');
 
-  // El FAB solo aparece en la vista de hoy
-  document.getElementById('fab-wrap').style.display = name === 'hoy' ? 'flex' : 'none';
-
   if (name === 'historial') renderHistory();
 }
 
@@ -129,16 +126,19 @@ function renderHoy() {
   const mealsList = document.getElementById('meals-list');
   mealsList.innerHTML = sortedMeals.length
     ? sortedMeals.map((m, i) => mealCard(m, i, curDate, day.meals)).join('')
-    : `<div class="empty"><div class="empty-icon">🍽</div>Sin comidas registradas.<br>Toca + para añadir.</div>`;
+    : `<div class="empty"><div class="empty-icon">🍽</div>Sin comidas registradas.</div>`;
+  mealsList.insertAdjacentHTML('beforeend', `<button class="add-inline" onclick="openMealModal()">+</button>`);
 
   const actsList = document.getElementById('acts-list');
   actsList.innerHTML = sortedActs.length
     ? sortedActs.map((a, i) => actCard(a, i, curDate, day.activities)).join('')
-    : `<div class="empty"><div class="empty-icon">⚡</div>Sin actividad registrada.<br>Toca + para añadir.</div>`;
+    : `<div class="empty-col"><div class="empty-icon">⚡</div>Sin actividad.</div>`;
+  actsList.insertAdjacentHTML('beforeend', `<button class="add-inline" onclick="openActModal()">+</button>`);
 
   const sleepList = document.getElementById('sleep-list');
   const sleepCards = sleepEntries.map(e => sleepCard(e.record, e.isSecondaryDay, curDate, e.originKey)).join('');
-  sleepList.innerHTML = sleepCards || `<div class="empty"><div class="empty-icon">🌙</div>Sin sueño registrado.<br>Toca + para añadir.</div>`;
+  sleepList.innerHTML = sleepCards || `<div class="empty-col"><div class="empty-icon">🌙</div>Sin sueño.</div>`;
+  sleepList.insertAdjacentHTML('beforeend', `<button class="add-inline" onclick="openSleepModal()">+</button>`);
 }
 
 // ── TEMPLATES DE CARDS ───────────────────────────────────────
@@ -202,7 +202,6 @@ function actCard(act, sortedIdx, dateKey, originalList) {
 let currentIngredients = [];
 
 function openMealModal() {
-  closeFab();
   currentIngredients = [];
 
   ['m-name', 'm-notes', 'm-ing'].forEach(id => {
@@ -425,7 +424,6 @@ function sleepCard(sleep, isSecondaryDay, viewKey, originKey) {
 
 // ── SUEÑO — MODAL ─────────────────────────────────────────────
 function openSleepModal() {
-  closeFab();
   const now  = nowHHMM();
   const [h, m] = now.split(':').map(Number);
   const endH = String((h + 8) % 24).padStart(2, '0');
@@ -493,7 +491,6 @@ function delSleepH(key, idx) {
 
 // ── MODAL ACTIVIDAD ──────────────────────────────────────────
 function openActModal() {
-  closeFab();
   document.getElementById('a-desc').value = '';
   document.getElementById('a-time').value = nowHHMM();
   document.getElementById('act-bd').classList.add('open');
@@ -785,19 +782,6 @@ function nukAll() {
   toast('Datos eliminados');
 }
 
-// ── FAB ──────────────────────────────────────────────────────
-function toggleFab() {
-  const opts = document.getElementById('fab-opts');
-  const btn  = document.getElementById('fab-btn');
-  const open = opts.classList.toggle('open');
-  btn.classList.toggle('open', open);
-}
-
-function closeFab() {
-  document.getElementById('fab-opts').classList.remove('open');
-  document.getElementById('fab-btn').classList.remove('open');
-}
-
 // ── UTILS ────────────────────────────────────────────────────
 function nowHHMM() {
   const d = new Date();
@@ -840,7 +824,6 @@ document.querySelectorAll('.backdrop').forEach(bd => {
   bd.addEventListener('click', e => {
     if (e.target === bd) {
       bd.classList.remove('open');
-      closeFab();
     }
   });
 });

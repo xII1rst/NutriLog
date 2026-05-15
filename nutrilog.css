@@ -444,95 +444,43 @@ main {
 }
 
 /* ── FAB (botón flotante de acción) ─────────────────────── */
-.fab-wrap {
-  position: fixed;
-  bottom: 28px;
-  right: 20px;
-  z-index: 200;
+/* ── LAYOUT T: bottom-row ────────────────────────────────── */
+.bottom-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: stretch;
+  margin-top: 8px;
 }
 
-.fab-options {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.28s ease;
+.bottom-col {
+  flex: 1;
+  min-width: 0;
 }
 
-.fab-options.open { max-height: 200px; }
-
-.fab-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
+.bottom-col-divider {
+  width: 1px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
 }
 
-.fab-row-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  background: var(--surface);
+/* ── ADD INLINE: botón + reactivo ───────────────────────── */
+.add-inline {
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 12px auto 8px;
+  border-radius: 10px;
+  background: var(--surface2);
   border: 1px solid var(--border2);
   color: var(--text2);
-  padding: 5px 13px;
-  border-radius: 8px;
-  white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.fab-mini {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.12s;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-}
-
-.fab-mini:active { transform: scale(0.92); }
-.fab-mini-meal     { background: var(--accent); color: #1a1400; }
-.fab-mini-activity { background: var(--surface3); color: var(--text); border: 1px solid var(--border2); }
-.fab-mini-sleep    { background: rgba(127, 160, 200, 0.15); color: #7fa0c8; border: 1px solid rgba(127, 160, 200, 0.3); }
-
-.fab-main {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: var(--accent);
-  color: #1a1400;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 24px rgba(200, 169, 110, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5);
-  transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+  font-size: 1.25rem;
   line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
 }
 
-.fab-main:hover {
-  transform: scale(1.04);
-  box-shadow: 0 8px 30px rgba(200, 169, 110, 0.35);
-}
-
-.fab-main.open {
-  background: var(--surface3);
-  color: var(--text2);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-  transform: rotate(45deg);
-}
+.add-inline:hover  { background: var(--surface3); color: var(--text); }
+.add-inline:active { transform: scale(0.92); }
 
 /* ── MODALS (bottom sheets) ─────────────────────────────── */
 .backdrop {
@@ -916,7 +864,6 @@ textarea {
 /* ── RESPONSIVE ─────────────────────────────────────────── */
 @media (min-width: 600px) {
   main       { padding: 0 24px 120px; }
-  .fab-wrap  { right: 32px; bottom: 36px; }
   .type-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
