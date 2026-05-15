@@ -302,6 +302,16 @@ main {
   display: none;
 }
 
+/* Sección comidas: header centrado igual que las columnas */
+#panel-hoy > .section-hd {
+  justify-content: center;
+}
+#panel-hoy > .section-hd::after {
+  display: none;
+}
+
+/* Línea horizontal que forma la T entre comidas y el bottom-row */
+
 /* empty-col: ícono centrado, sin texto */
 .empty-col {
   display: flex;
@@ -469,6 +479,8 @@ main {
   display: flex;
   align-items: stretch;
   margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
 }
 
 .bottom-col {
