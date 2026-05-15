@@ -113,7 +113,6 @@ function renderHoy() {
   const totalIngredientes = day.meals.reduce((acc, m) => acc + m.ingredients.length, 0);
 
   document.getElementById('s-meals').textContent = day.meals.length;
-  document.getElementById('s-ings').textContent  = totalIngredientes;
   document.getElementById('s-acts').textContent  = day.activities.length;
 
   // Sueño: calcular horas que tocan este día
@@ -132,12 +131,12 @@ function renderHoy() {
   const actsList = document.getElementById('acts-list');
   actsList.innerHTML = sortedActs.length
     ? sortedActs.map((a, i) => actCard(a, i, curDate, day.activities)).join('')
-    : `<div class="empty-col"><div class="empty-icon">⚡</div>Sin actividad.</div>`;
+    : `<div class="empty-col"><div class="empty-icon">⚡</div></div>`;
   actsList.insertAdjacentHTML('beforeend', `<button class="add-inline" onclick="openActModal()">+</button>`);
 
   const sleepList = document.getElementById('sleep-list');
   const sleepCards = sleepEntries.map(e => sleepCard(e.record, e.isSecondaryDay, curDate, e.originKey)).join('');
-  sleepList.innerHTML = sleepCards || `<div class="empty-col"><div class="empty-icon">🌙</div>Sin sueño.</div>`;
+  sleepList.innerHTML = sleepCards || `<div class="empty-col"><div class="empty-icon">🌙</div></div>`;
   sleepList.insertAdjacentHTML('beforeend', `<button class="add-inline" onclick="openSleepModal()">+</button>`);
 }
 

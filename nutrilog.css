@@ -293,6 +293,26 @@ main {
 
 .section-spacer { height: 24px; }
 
+/* En columnas del layout T: header centrado, sin línea lateral */
+.bottom-col .section-hd {
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.bottom-col .section-hd::after {
+  display: none;
+}
+
+/* empty-col: ícono centrado, sin texto */
+.empty-col {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 8px;
+}
+.empty-col .empty-icon {
+  font-size: 1.5rem;
+  opacity: 0.4;
+}
+
 /* ── CARDS ──────────────────────────────────────────────── */
 .card {
   background: var(--surface);
