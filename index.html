@@ -89,6 +89,10 @@
         <div class="stat-n"      id="s-acts">0</div>
         <div class="stat-l">Actividades</div>
       </div>
+      <div class="stat-cell">
+        <div class="stat-n"      id="s-sleep">—</div>
+        <div class="stat-l">Sueño</div>
+      </div>
     </div>
 
     <!-- Lista de comidas -->
@@ -100,6 +104,12 @@
     <!-- Lista de actividades -->
     <div class="section-hd">Esfuerzo físico</div>
     <div id="acts-list"></div>
+
+    <div class="section-spacer"></div>
+
+    <!-- Lista de sueño -->
+    <div class="section-hd">Sueño</div>
+    <div id="sleep-list"></div>
 
   </div><!-- /panel-hoy -->
 
@@ -205,6 +215,10 @@
       <div class="fab-row-label">Registrar actividad</div>
       <button class="fab-mini fab-mini-activity">&#9889;</button>
     </div>
+    <div class="fab-row" onclick="openSleepModal()">
+      <div class="fab-row-label">Registrar sueño</div>
+      <button class="fab-mini fab-mini-sleep">🌙</button>
+    </div>
   </div>
 
   <!-- Botón principal -->
@@ -293,6 +307,36 @@
 
     <button class="btn-primary" onclick="saveAct()">Guardar actividad</button>
     <button class="btn-ghost"   onclick="closeActModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL — REGISTRAR SUEÑO
+════════════════════════════════════════════════════════════ -->
+<div class="backdrop" id="sleep-bd">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Registrar sueño</div>
+
+    <div class="fg">
+      <label class="fl">Me dormí a las</label>
+      <input type="time" id="s-start" oninput="updateSleepPreview()">
+    </div>
+
+    <div class="fg">
+      <label class="fl">Me desperté a las</label>
+      <input type="time" id="s-end" oninput="updateSleepPreview()">
+    </div>
+
+    <div class="sleep-duration-preview" id="s-duration"></div>
+
+    <div class="fg">
+      <label class="fl">Notas (opcional)</label>
+      <textarea id="s-notes" placeholder="ej. Dormí bien, me desperté una vez…"></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="saveSleep()">Guardar sueño</button>
+    <button class="btn-ghost"   onclick="closeSleepModal()">Cancelar</button>
   </div>
 </div>
 

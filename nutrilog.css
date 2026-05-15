@@ -406,6 +406,28 @@ main {
   border-left: 2px solid var(--border2);
 }
 
+/* Acento izquierdo azul-nocturno para cards de sueño */
+.card.sleep-card {
+  border-left: 2px solid rgba(127, 160, 200, 0.4);
+}
+
+/* Etiqueta cross-day más pequeña y tenue */
+.sleep-cross-label {
+  font-size: 0.67rem !important;
+  color: var(--text3) !important;
+  font-style: italic;
+  margin-top: 1px;
+}
+
+/* Preview de duración en el modal */
+.sleep-duration-preview {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: -8px 0 16px;
+  min-height: 1.2em;
+}
+
 /* ── EMPTY STATE ────────────────────────────────────────── */
 .empty {
   text-align: center;
@@ -481,6 +503,7 @@ main {
 .fab-mini:active { transform: scale(0.92); }
 .fab-mini-meal     { background: var(--accent); color: #1a1400; }
 .fab-mini-activity { background: var(--surface3); color: var(--text); border: 1px solid var(--border2); }
+.fab-mini-sleep    { background: rgba(127, 160, 200, 0.15); color: #7fa0c8; border: 1px solid rgba(127, 160, 200, 0.3); }
 
 .fab-main {
   width: 52px;

@@ -119,6 +119,13 @@ function renderHoy() {
   document.getElementById('s-ings').textContent  = totalIngredientes;
   document.getElementById('s-acts').textContent  = day.activities.length;
 
+  // Sueño: calcular horas que tocan este día
+  const sleepEntries = getSleepForDay(curDate);
+  const totalSleepMin = sleepEntries.reduce((acc, e) => acc + e.minutesInDay, 0);
+  document.getElementById('s-sleep').textContent = totalSleepMin > 0
+    ? formatSleepDuration(totalSleepMin)
+    : '—';
+
   const mealsList = document.getElementById('meals-list');
   mealsList.innerHTML = sortedMeals.length
     ? sortedMeals.map((m, i) => mealCard(m, i, curDate, day.meals)).join('')
@@ -128,6 +135,10 @@ function renderHoy() {
   actsList.innerHTML = sortedActs.length
     ? sortedActs.map((a, i) => actCard(a, i, curDate, day.activities)).join('')
     : `<div class="empty"><div class="empty-icon">⚡</div>Sin actividad registrada.<br>Toca + para añadir.</div>`;
+
+  const sleepList = document.getElementById('sleep-list');
+  const sleepCards = sleepEntries.map(e => sleepCard(e.record, e.isSecondaryDay, curDate, e.originKey)).join('');
+  sleepList.innerHTML = sleepCards || `<div class="empty"><div class="empty-icon">🌙</div>Sin sueño registrado.<br>Toca + para añadir.</div>`;
 }
 
 // ── TEMPLATES DE CARDS ───────────────────────────────────────
@@ -306,6 +317,9 @@ function undoDelete() {
 
   if (type === 'meal') {
     day.meals.splice(idx, 0, item);
+  } else if (type === 'sleep') {
+    if (!day.sleep) day.sleep = [];
+    day.sleep.splice(idx, 0, item);
   } else {
     day.activities.splice(idx, 0, item);
   }
@@ -316,6 +330,165 @@ function undoDelete() {
   if (render === 'hoy') renderHoy();
   else renderHistory();
   toast('Restaurado ✓');
+}
+
+// ── SUEÑO — HELPERS ──────────────────────────────────────────
+function timeToMinutes(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function formatSleepDuration(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
+
+function sleepMinutesForRole(s, role) {
+  const startMin = timeToMinutes(s.start);
+  const endMin   = timeToMinutes(s.end);
+  if (endMin >= startMin) {
+    // No cruza medianoche: todo en el origen
+    return role === 'origin' ? (endMin - startMin) : 0;
+  } else {
+    // Cruza medianoche
+    if (role === 'origin')    return 1440 - startMin; // start → medianoche
+    if (role === 'secondary') return endMin;            // medianoche → end
+  }
+  return 0;
+}
+
+// Devuelve registros de sueño que tocan el día key
+// { record, originKey, isSecondaryDay, minutesInDay }
+function getSleepForDay(key) {
+  const result = [];
+  const data   = load();
+
+  const ownDay = data[key] || {};
+  (ownDay.sleep || []).forEach(s => {
+    const mins = sleepMinutesForRole(s, 'origin');
+    result.push({ record: s, originKey: key, isSecondaryDay: false, minutesInDay: mins });
+  });
+
+  const prevKey = shiftKey(key, -1);
+  const prevDay = data[prevKey] || {};
+  (prevDay.sleep || []).forEach(s => {
+    if (timeToMinutes(s.end) < timeToMinutes(s.start)) {
+      const mins = sleepMinutesForRole(s, 'secondary');
+      result.push({ record: s, originKey: prevKey, isSecondaryDay: true, minutesInDay: mins });
+    }
+  });
+
+  return result;
+}
+
+// ── SUEÑO — CARD ─────────────────────────────────────────────
+function sleepCard(sleep, isSecondaryDay, viewKey, originKey) {
+  const startMin = timeToMinutes(sleep.start);
+  const endMin   = timeToMinutes(sleep.end);
+  const crosses  = endMin < startMin;
+  const totalMin = crosses ? (1440 - startMin) + endMin : endMin - startMin;
+  const durationStr = formatSleepDuration(totalMin);
+
+  const crossLabel = crosses && isSecondaryDay  ? '(ayer a hoy)'
+                   : crosses && !isSecondaryDay ? '(hoy a mañana)'
+                   : '';
+
+  const note = sleep.notes ? `<div class="card-note">${esc(sleep.notes)}</div>` : '';
+
+  // Botón eliminar solo en el día origen (evita doble borrado)
+  let delBtn = '';
+  if (!isSecondaryDay) {
+    const dayObj  = getDay(originKey);
+    const realIdx = (dayObj.sleep || []).findIndex(s => s.id === sleep.id);
+    const onDel   = originKey === curDate
+      ? `delSleep(${realIdx})`
+      : `delSleepH('${originKey}', ${realIdx}); renderHistory()`;
+    delBtn = `<button class="card-delete" onclick="${onDel}">✕</button>`;
+  }
+
+  return `
+    <div class="card sleep-card">
+      <div class="card-top">
+        <div class="card-left">
+          <div class="card-name">🌙 Sueño</div>
+          <div class="card-meta">${sleep.start} → ${sleep.end} · ${durationStr}</div>
+          ${crossLabel ? `<div class="card-meta sleep-cross-label">${crossLabel}</div>` : ''}
+        </div>
+        ${delBtn}
+      </div>
+      ${note}
+    </div>`;
+}
+
+// ── SUEÑO — MODAL ─────────────────────────────────────────────
+function openSleepModal() {
+  closeFab();
+  const now  = nowHHMM();
+  const [h, m] = now.split(':').map(Number);
+  const endH = String((h + 8) % 24).padStart(2, '0');
+  document.getElementById('s-start').value = now;
+  document.getElementById('s-end').value   = `${endH}:${String(m).padStart(2, '0')}`;
+  document.getElementById('s-notes').value = '';
+  updateSleepPreview();
+  document.getElementById('sleep-bd').classList.add('open');
+}
+
+function closeSleepModal() {
+  document.getElementById('sleep-bd').classList.remove('open');
+}
+
+function updateSleepPreview() {
+  const start = document.getElementById('s-start').value;
+  const end   = document.getElementById('s-end').value;
+  const el    = document.getElementById('s-duration');
+  if (!start || !end) { el.textContent = ''; return; }
+
+  const startMin = timeToMinutes(start);
+  const endMin   = timeToMinutes(end);
+  const totalMin = endMin < startMin
+    ? (1440 - startMin) + endMin
+    : endMin - startMin;
+
+  el.textContent = totalMin > 0 ? `⏱ ${formatSleepDuration(totalMin)}` : '';
+}
+
+function saveSleep() {
+  const start = document.getElementById('s-start').value;
+  const end   = document.getElementById('s-end').value;
+  if (!start || !end) { toast('Ingresa inicio y fin'); return; }
+  if (start === end)  { toast('El inicio y fin no pueden ser iguales'); return; }
+
+  const notes = document.getElementById('s-notes').value.trim();
+  const day   = getDay(curDate);
+  if (!day.sleep) day.sleep = [];
+
+  day.sleep.push({ id: Date.now(), start, end, notes });
+  saveDay(curDate, day);
+  closeSleepModal();
+  renderHoy();
+  toast('Sueño guardado');
+}
+
+function delSleep(idx) {
+  const day  = getDay(curDate);
+  if (!day.sleep) return;
+  const item = day.sleep.splice(idx, 1)[0];
+  saveDay(curDate, day);
+  undoStack = { key: curDate, type: 'sleep', idx, item, render: 'hoy' };
+  renderHoy();
+  toastUndo('Sueño eliminado');
+}
+
+function delSleepH(key, idx) {
+  const day  = getDay(key);
+  if (!day.sleep) return;
+  const item = day.sleep.splice(idx, 1)[0];
+  saveDay(key, day);
+  undoStack = { key, type: 'sleep', idx, item, render: 'history' };
+  toastUndo('Sueño eliminado');
 }
 
 // ── MODAL ACTIVIDAD ──────────────────────────────────────────
@@ -373,9 +546,8 @@ function renderHistory() {
 
   cont.innerHTML = dates.map(key => {
     const day   = data[key];
-    const total = day.meals.length + day.activities.length;
+    const total = day.meals.length + day.activities.length + (day.sleep || []).length;
 
-    // Ordenar también en historial
     const sortedMeals = [...day.meals].sort((a, b) =>
       (a.time || '99:99').localeCompare(b.time || '99:99')
     );
@@ -383,9 +555,13 @@ function renderHistory() {
       (a.time || '99:99').localeCompare(b.time || '99:99')
     );
 
+    // Sueño: propios + cross-day del día anterior
+    const sleepEntries = getSleepForDay(key);
+
     const cards = [
       ...sortedMeals.map((m, i) => mealCard(m, i, key, day.meals)),
-      ...sortedActs.map((a, i)  => actCard(a, i, key, day.activities))
+      ...sortedActs.map((a, i)  => actCard(a, i, key, day.activities)),
+      ...sleepEntries.map(e     => sleepCard(e.record, e.isSecondaryDay, key, e.originKey))
     ].join('');
 
     return `
@@ -420,6 +596,11 @@ function buildJSON() {
       actividad_fisica: data[key].activities.map(a => ({
         hora:        a.time || null,
         descripcion: a.description
+      })),
+      sueno: (data[key].sleep || []).map(s => ({
+        inicio: s.start,
+        fin:    s.end,
+        notas:  s.notes || null
       }))
     }))
   }, null, 2);
